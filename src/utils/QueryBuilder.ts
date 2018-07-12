@@ -1,66 +1,82 @@
+import PageInfo = bridge.PageInfo;
+import OrderInfo = bridge.OrderInfo;
+import SearchInfo = bridge.SearchInfo;
+import OpType = bridge.OpType;
+import SearchType = bridge.SearchType;
+
 namespace bridge {
 
+    export interface QueryConfig {
+        readonly order_name: string;
+        readonly search_name: string;
+        readonly sample_search_prefix: string;
+        readonly limit_name: string;
+        readonly offset_name: string;
+        readonly enable_sample_query: boolean;
+    }
+    export var DefaultQueryConfig: QueryConfig = {
+        order_name: "order",
+        search_name: "sc",
+        sample_search_prefix: "$",
+        limit_name: "limit",
+        offset_name: "offset",
+        enable_sample_query: true
+    }
     export class QueryBuilder {
-        public static DEFAULT_ORDER_NAME: string = "order";
-        public static DEFAULT_SEARCH_NAME: string = "query";
-        public static DEFAULT_SAMPLE_SEARCH_PREFIX = "$";
-        public static DEFAULT_PAGE_INDEX_NAME = "pageIndex";
-        public static DEFAULT_PAGE_SIZE_NAME = "pageSize";
-        public static DEFAULT_LIMIT_NAME = "limit";
-        public static DEFAULT_OFFSET_NAME = "offset";
 
-
-        public static buildOrderQuery(order: OrderInfo): { [index: string]: string } {
-            if (!order) return {};
-            let res = {};
-            res[this.DEFAULT_ORDER_NAME] = order.toString()
-            return res;
+        constructor(public readonly config: QueryConfig = DefaultQueryConfig) {
         }
 
-        public static buildPageQuery(page: PageInfo): { [index: string]: string } {
-            if (!page) return {};
-            let res = {};
+        public appendOrderQuerys(order: OrderInfo, dest: { [index: string]: string }): void {
+            if (!order) return;
+            dest[this.config.order_name] = order.toString()
+        }
+
+        public appendPageQuery(page: PageInfo, dest: { [index: string]: string }): void {
+            if (!page) return;
             if (page.offset) {
-                res[QueryBuilder.DEFAULT_OFFSET_NAME] = page.offset;
+                dest[this.config.offset_name] = page.offset.toString();
             }
-            res[QueryBuilder.DEFAULT_LIMIT_NAME] = page.limit;
-            return res;
+            if (page.limit) {
+                dest[this.config.limit_name] = page.limit.toString();
+            }
         }
-        public static buildSearchQuery(sc: SearchInfo): { [index: string]: string } {
-            let res = {};
-
-
-            return res;
+        public appendSearchQuery(sc: SearchInfo, dest: { [index: string]: string }): void {
+            if(!sc) return;
+            if (this.config.enable_sample_query && this.isSampleQuery(sc)) {
+                this.appendSampleQuery(sc, dest);
+            } else {
+                this.appendComplexQuery(sc, dest);
+            }
         }
-        private static buildSampleQuery(sc: SearchInfo): { [index: string]: string } {
-            let res = {};
+        private appendSampleQuery(sc: SearchInfo, dest: { [index: string]: string }): void {
             if (sc.OpType === OpType.SingleItem) {
-                res[`${this.DEFAULT_SAMPLE_SEARCH_PREFIX}${sc.FieldName}`] = sc.Value
+                dest[`${this.config.sample_search_prefix}${sc.FieldName}`] = sc.Value.toString()
             }
             else {
                 sc.Items.forEach((v) => {
-                    res[`${this.DEFAULT_SAMPLE_SEARCH_PREFIX}${v.FieldName}`] = v.Value
+                    dest[`${this.config.sample_search_prefix}${v.FieldName}`] = v.Value.toString()
                 });
             }
-            return res;
         }
-        private static isSampleQuery(sc: SearchInfo): boolean {
+        private isSampleQuery(sc: SearchInfo): boolean {
             if (sc.OpType === OpType.SingleItem) {
                 return sc.SearchType === SearchType.Equals;
             } else if (sc.OpType === OpType.AndItems) {
                 return sc.Items.every((v) => v.OpType === OpType.SingleItem
-                    && v.SearchType === SearchType.Equals);
+                    && v.SearchType === SearchType.Equals && v.Value);
             }
             return false;
         }
-
-        private static buildComplexQuery(sc: SearchInfo): { [index: string]: string } {
-            let jsonStr = JSON.stringify(sc);
-            let res = {};
-            res[QueryBuilder.DEFAULT_SEARCH_NAME] = btoa(jsonStr);
-            return res;
+        private appendComplexQuery(sc: SearchInfo, dest: { [index: string]: string }) {
+            dest[this.config.search_name] = btoa(JSON.stringify(sc));
         }
     }
+
+
+
+
+
 
 
 

@@ -1,95 +1,104 @@
-import SearchInfo =bridge.SearchInfo;
-import OrderInfo=bridge.OrderInfo;
-import PageInfo=bridge.PageInfo;
-import ResultInfo=bridge.ResultInfo;
-import ResultData=bridge.ResultData;
+import SearchInfo = bridge.SearchInfo;
+import OrderInfo = bridge.OrderInfo;
+import PageInfo = bridge.PageInfo;
+import ResultInfo = bridge.ResultInfo;
+import ResultData = bridge.ResultData;
+import QueryConfig = bridge.QueryConfig;
+import DefaultRestConfig=bridge.DefaultRestConfig;
+import DefaultQueryConfig=bridge.DefaultQueryConfig;
+import QueryBuilder=bridge.QueryBuilder;
+import UrlBuilder=bridge.UrlBuilder;
+import { request } from "http";
 
 namespace bridge {
+
+
+    type RequestHook = (r: Request) => Promise<Request>;
+    type ResponseHook = (r: Response) => Promise<Response>;
+
+    export class HttpClient {
+
+        public static GlobalRequsetHooks: RequestHook[] = [];
+        public static GlobalReponseHooks: ResponseHook[] = [];
+
+        public RequestHooks: RequestHook[] = [];
+        public ReponseHooks: ResponseHook[] = [];
+
+        public get(url: string, headers: { [index: string]: string }): Promise<Response> {
+            return this.send(url, { method: "get", headers: headers });
+        }
+        public post(url: string, headers: { [index: string]: string }, body?: any): Promise<Response> {
+            return this.send(url, { method: "post", headers: headers, body: body });
+        }
+        public put(url: string, headers: { [index: string]: string }, body?: any): Promise<Response> {
+            return this.send(url, { method: "put", headers: headers, body: body });
+        }
+        public delete(url: string, headers: { [index: string]: string }, body?: any): Promise<Response> {
+            return this.send(url, { method: "delete", headers: headers, body: body });
+        }
+        public patch(url: string, headers: { [index: string]: string }, body?: any): Promise<Response> {
+            return this.send(url, { method: "patch", headers: headers, body: body });
+        }
+        public send(input?: Request | string, init?: RequestInit): Promise<Response> {
+            let request = new Request(input, init);
+            return this.handleRequest(request).then((r) => fetch(r))
+        }
+
+        private handleRequest(request: Request): Promise<Request> {
+            let allHooks: RequestHook[] = [...HttpClient.GlobalRequsetHooks, ...this.RequestHooks];
+            return allHooks.reduce((prev, current) => current ? prev.then(a => current(a)) : prev,
+                new Promise<Request>(v => request));
+        }
+        private handleResponse(reponse: Response): Promise<Response> {
+            let allHooks: ResponseHook[] = [...HttpClient.GlobalReponseHooks, ...this.ReponseHooks];
+            return allHooks.reduce((prev, current) => current ? prev.then(a => current(a)) : prev,
+                new Promise<Response>(v => reponse));
+        }
+    }
+
     export class Api {
 
-        //#region 静态属性
-        private static _config : RestConfig;
-        public static get config() : RestConfig {
-            return Api._config;
+        public readonly queryBuilder:QueryBuilder;
+        public readonly urlBuilder:UrlBuilder;
+        constructor(private restConfig: RestConfig=DefaultRestConfig, 
+                    private queryConfig: QueryConfig=DefaultQueryConfig, 
+                    public readonly client: HttpClient = new HttpClient()) {
+                 this.urlBuilder=new UrlBuilder(restConfig);
+                 this.queryBuilder=new QueryBuilder(queryConfig);         
         }
-        public static set config(v : RestConfig) {
-            Api._config = v;
+
+        public List<T>(sc: SearchInfo, order: OrderInfo): ResultData<Array<T>> {
+            return null;
         }
-        //#endregion
-        
+        public Page<T>(pageinfo: PageInfo, sc: SearchInfo, order: OrderInfo): ResultData<Array<T>> {
+            return null;
+        }
+        public Add<T>(data: T): ResultData<T> {
+            return null;
+        }
+        public Find<T>(key: string): ResultData<T> {
+            return null;
+        }
+        public Delete<T>(key: string): ResultInfo {
+            return null;
+        }
+        public Update<T>(key: string, data: T): ResultData<T> {
+            return null;
+        }
 
 
-        public static List<T>(sc:SearchInfo,order:OrderInfo,config?:RestConfig):ResultData<Array<T>>
-        {
-            return null;
-        }
-        public static Page<T>(pageinfo:PageInfo,sc:SearchInfo,order:OrderInfo,config?:RestConfig):ResultData<Array<T>>
-        {
-            return null;
-        }
-        public static Add<T>(data:T,config?:RestConfig):ResultData<T>
-        {
-            return null;
-        }
-        public static Find<T>(key:string,config?:RestConfig):ResultData<T>
-        {
-            return null;
-        }
-        public static Delete<T>(key:string,config?:RestConfig):ResultInfo
-        {
-            return null;
-        }
-        public static Update<T>(key:string,data:T,config?:RestConfig):ResultData<T>
-        {
-            return null;
-        }
+
     }
 
-    export class RestConfig {
-
-        constructor(protocol?:string,host?:string,port?:number,prefix?:string){
-            this.protocol = protocol;
-            this.host = host;
-            this.port = port;
-            this.prefix = prefix;
-        }
-
-        private _protocol: string;
-        public get protocol(): string {
-            return this._protocol;
-        }
-        public set protocol(v: string) {
-            this._protocol = v;
-        }
-        private _host: string;
-        public get host(): string {
-            return this._host;
-        }
-        public set host(v: string) {
-            this._host = v;
-        }
-
-
-        private _port: number;
-        public get port(): number {
-            return this._port;
-        }
-        public set port(v: number) {
-            this._port = v;
-        }
-
-        private _prefix: string;
-        public get prefix(): string {
-            return this._prefix;
-        }
-        public set prefix(v: string) {
-            this._prefix = v;
-        }
+    export interface RestConfig {
+        readonly protocol?: string;
+        readonly host?: string;
+        readonly port?: number;
+        readonly prefix?: string
     }
-    
-    export function Path(path:string) {
-        return function(target:any){
 
-        }
+    export var DefaultRestConfig: RestConfig = {
+        prefix: "api/v1"
     }
+
 }
