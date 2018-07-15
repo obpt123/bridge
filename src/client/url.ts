@@ -1,22 +1,4 @@
-import RestConfig = bridge.RestConfig;
-import DefaultRestConfig = bridge.DefaultRestConfig;
-namespace bridge {
-
-    export class UrlBuilder {
-        /**
-         *
-         */
-        constructor(public readonly restConfig: RestConfig = DefaultRestConfig) {
-        }
-        public buildUrl(paths: string[], querys: { [index: string]: string }): string {
-            return buildUrl(this.restConfig.protocol,
-                            this.restConfig.host,
-                            this.restConfig.port,
-                            this.restConfig.prefix
-                            , paths, querys);
-        }
-
-    }
+namespace client {
     export function buildUrl(protocol: string, host: string, port: number, prefix: string, paths: string[], querys: { [index: string]: string }): string {
         let fullhost = buildHostWithProtocal(protocol, host, port);
         paths = paths ? [...paths] : [];
@@ -49,7 +31,8 @@ namespace bridge {
             .join('/');
         let queryString: string = joinQueryString(querys);
         if (queryString) {
-            return `${fullhost}/${fullPath}?${queryString}`;
+            let joinChar = fullPath.indexOf("?") >= 0 ? "&" : "?"
+            return `${fullhost}/${fullPath}${joinChar}${queryString}`;
         } else {
             return `${fullhost}/${fullPath}`;
         }
