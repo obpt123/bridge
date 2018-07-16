@@ -1,4 +1,4 @@
-namespace bridge {
+namespace data {
     export class SearchInfo {
 
         private constructor() {
@@ -116,7 +116,7 @@ namespace bridge {
         }
 
     }
-    export enum SearchType {
+    export const enum SearchType {
         /// <summary>
         /// ==
         /// </summary>

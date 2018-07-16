@@ -12,7 +12,7 @@ gulp.task("ts", function () {
     return browserify({
         basedir: '.',
         debug: true,
-        entries: ['src/index.tsx'],
+        entries: ['src/api/api.ts'],
         cache: {},
         packageCache: {}
     })

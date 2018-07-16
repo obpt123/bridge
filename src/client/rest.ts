@@ -1,4 +1,4 @@
-import buildUrl = client.buildUrl;
+/// <reference path="url.ts" />
 namespace client {
     export interface RestConfig {
         readonly protocol?: string;
@@ -25,8 +25,8 @@ namespace client {
         readonly body: any;
     }
 
-    type RequestHook = (r: Request) => Promise<Request>;
-    type ResponseHook = (r: Response) => Promise<Response>;
+    type RequestHook = (r: Request) => Request
+    type ResponseHook = (r: Response) => Response;
 
     export class Http {
         public static readonly GlobalRequsetHooks: RequestHook[] = [];
@@ -34,7 +34,6 @@ namespace client {
 
         public readonly RequestHooks: RequestHook[] = [];
         public readonly ReponseHooks: ResponseHook[] = [];
-
 
         constructor(public config: RestConfig = DefaultRestConfig) {
         }
@@ -58,22 +57,22 @@ namespace client {
         public send(method: string, rest: RestInfo): Promise<Response> {
             let url = this.buildUrl([rest.path], rest.querys);
             let request = new Request(url, { method: method, headers: rest.headers, body: rest.body });
-            return this.handleRequest(request).then((r) => fetch(r))
+            request = this.handleRequest(request);
+            return fetch(request);
+            
         }
 
         private assertRestInfo(restOrPath: RestInfo | string): RestInfo {
             return (typeof restOrPath === "string") ? { path: restOrPath } : { path: "/", ...restOrPath };
         }
 
-        private handleRequest(request: Request): Promise<Request> {
+        private handleRequest(request: Request): Request {
             let allHooks: RequestHook[] = [...Http.GlobalRequsetHooks, ...this.RequestHooks];
-            return allHooks.reduce((prev, current) => current ? prev.then(a => current(a)) : prev,
-                new Promise<Request>(v => request));
+            return allHooks.reduce((prev, curr) => (prev && curr) ? curr(prev) : prev, request);
         }
-        private handleResponse(reponse: Response): Promise<Response> {
+        private handleResponse(response: Response): Response {
             let allHooks: ResponseHook[] = [...Http.GlobalReponseHooks, ...this.ReponseHooks];
-            return allHooks.reduce((prev, current) => current ? prev.then(a => current(a)) : prev,
-                new Promise<Response>(v => reponse));
+            return allHooks.reduce((prev, curr) => (prev && curr) ? curr(prev) : prev, response);
         }
         private buildUrl(paths: string[], querys: { [index: string]: string }): string {
             if (this.config) {

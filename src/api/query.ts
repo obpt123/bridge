@@ -1,10 +1,10 @@
-import PageInfo = bridge.PageInfo;
-import OrderInfo = bridge.OrderInfo;
-import SearchInfo = bridge.SearchInfo;
-import OpType = bridge.OpType;
-import SearchType = bridge.SearchType;
+import PageInfo = data.PageInfo;
+import OrderInfo = data.OrderInfo;
+import SearchInfo = data.SearchInfo;
+import OpType = data.OpType;
+import SearchType = data.SearchType;
 
-namespace bridge {
+namespace api {
 
     export interface QueryConfig {
         readonly order_name: string;
@@ -42,7 +42,7 @@ namespace bridge {
             }
         }
         public appendSearchQuery(sc: SearchInfo, dest: { [index: string]: string }): void {
-            if(!sc) return;
+            if (!sc) return;
             if (this.config.enable_sample_query && this.isSampleQuery(sc)) {
                 this.appendSampleQuery(sc, dest);
             } else {

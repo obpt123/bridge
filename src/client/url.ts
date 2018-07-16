@@ -1,4 +1,7 @@
 namespace client {
+    export class Tac{
+        
+    }
     export function buildUrl(protocol: string, host: string, port: number, prefix: string, paths: string[], querys: { [index: string]: string }): string {
         let fullhost = buildHostWithProtocal(protocol, host, port);
         paths = paths ? [...paths] : [];
